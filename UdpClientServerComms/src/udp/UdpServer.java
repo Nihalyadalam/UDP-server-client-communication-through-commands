@@ -14,8 +14,10 @@ public class UdpServer implements ServerCodes, ServerCommands{
 	
 	private byte[] receive = null;
 	private byte[] receiveProcessed = null;
+	private byte[] userChoice = null;
+	private byte[] userMessage = null;
 	
-	//variable size to compute the non zero values in the receive buffer
+	// variable size to compute the non zero values in the receive buffer
 	private List<Byte> byteArrayList = new ArrayList<Byte>();
 	private DatagramPacket dataReceive = null;
 	private int countNonZeroValues;
@@ -31,9 +33,9 @@ public class UdpServer implements ServerCodes, ServerCommands{
 		
         while (true)
         {	
-        	//refresh count to zero
+        	// refresh count to zero
         	countNonZeroValues = 0; 
-        	
+        	userChoice = new byte[1];
         	receive = new byte[256];
             // Step 2 : create a DatgramPacket to receive the data.
         	dataReceive = new DatagramPacket(receive, receive.length);
@@ -43,10 +45,10 @@ public class UdpServer implements ServerCodes, ServerCommands{
             
             System.out.println("buffer length: "+dataReceive.getLength());
             System.out.println("buffer data recieved: "+Arrays.toString(receive));
-            System.out.println("Client choice: " + dataToString(receive));
+            System.out.println("Client data: " + dataToString(receive));
             	
             
-            //get only non zero values from the receive buffer
+            // get only non zero values from the receive buffer
             for(int i=0;i<receive.length;i++) {
             	if(receive[i]!=0) {
             		countNonZeroValues = countNonZeroValues+1;
@@ -54,18 +56,32 @@ public class UdpServer implements ServerCodes, ServerCommands{
             	}
             }
             
-           //create a new byte array with the size of non-zero entries
+           // create a new byte array with the size of non-zero entries
            receiveProcessed = new byte[countNonZeroValues];
            
-           //fill the non-zero values from byte list to newly created byte array 
+           // fill the non-zero values from byte list to newly created byte array 
            for(int i=0;i<byteArrayList.size();i++) {
         	   receiveProcessed[i] = byteArrayList.get(i);
         	   
            }
            
+           // get the user choice
+           userChoice[0] = receiveProcessed[0];
+           
+           // allocate remaining non zero bytes to user message
+           userMessage = new byte[byteArrayList.size()-1];
+           
+           // remove the choice (number)
+           byteArrayList.remove(0);
+           
+           // append the remaining non zero bytes to user message         
+           for(int i=0;i<byteArrayList.size();i++)
+           userMessage[i] = byteArrayList.get(i);
+           
            System.out.println("Processed buffer data: "+Arrays.toString(receiveProcessed));
+           System.out.println("User choice: "+dataToString(userChoice));
             	
-            if(ServerCommands.requestTime.equals(dataToString(receiveProcessed))) {
+            if(ServerCommands.requestTime.equals(dataToString(userChoice))) {
             
             	 DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");  
             	   								 LocalDateTime now = LocalDateTime.now();  
@@ -73,17 +89,17 @@ public class UdpServer implements ServerCodes, ServerCommands{
             	   								
             	
             }
-            else if(ServerCommands.requestMessage.equals(dataToString(receiveProcessed))) {
-            	
-            	
+            else if(ServerCommands.requestMessage.equals(dataToString(userChoice))) {
+            	System.out.println("From server: "+dataToString(userMessage));          	
             }
 
          // Clear the buffer after every message.
 	     receive = null;
 	     receiveProcessed = null;
+	     userChoice = null;
+	     userMessage = null;
 	     byteArrayList.clear();
-	     
-            
+	                
         }
 		
 	}
